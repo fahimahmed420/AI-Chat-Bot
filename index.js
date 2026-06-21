@@ -18,19 +18,177 @@ app.get('/online', (req, res) => {
   if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
   isOnline = true;
   console.log('[mode] ONLINE — bot is silent');
-  res.send('✅ You are now ONLINE. Bot is silent — you reply manually.');
+  res.json({ mode: 'online' });
 });
 
 app.get('/offline', (req, res) => {
   if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
   isOnline = false;
   console.log('[mode] OFFLINE — bot is active');
-  res.send('🤖 You are now OFFLINE. Bot will auto-reply to customers.');
+  res.json({ mode: 'offline' });
 });
 
 app.get('/status', (req, res) => {
   if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
-  res.send(`Current mode: ${isOnline ? '🟢 ONLINE (bot silent)' : '🔴 OFFLINE (bot active)'}`);
+  res.json({ mode: isOnline ? 'online' : 'offline' });
+});
+
+app.get('/dashboard', (req, res) => {
+  if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
+  const key = req.query.key;
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Aura Goli — Bot Control</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #0f0f0f;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #fff;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 24px;
+      padding: 48px 40px;
+      text-align: center;
+      width: 340px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .logo { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 6px; }
+    .logo span { color: #a78bfa; }
+    .subtitle { color: #555; font-size: 13px; margin-bottom: 40px; }
+    .status-label {
+      font-size: 13px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .status-text {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 36px;
+      transition: color 0.3s;
+    }
+    .status-text.online  { color: #34d399; }
+    .status-text.offline { color: #f87171; }
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    .toggle-label { font-size: 14px; color: #777; }
+    .toggle {
+      position: relative;
+      width: 64px;
+      height: 34px;
+      cursor: pointer;
+    }
+    .toggle input { display: none; }
+    .slider {
+      position: absolute;
+      inset: 0;
+      background: #2a2a2a;
+      border-radius: 34px;
+      transition: background 0.3s;
+    }
+    .slider::before {
+      content: '';
+      position: absolute;
+      height: 26px; width: 26px;
+      left: 4px; bottom: 4px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+    input:checked + .slider { background: #34d399; }
+    input:checked + .slider::before { transform: translateX(30px); }
+    .info {
+      background: #111;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+    }
+    .info strong { color: #888; }
+    .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .dot.online  { background: #34d399; box-shadow: 0 0 8px #34d399; }
+    .dot.offline { background: #f87171; box-shadow: 0 0 8px #f87171; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Aura <span>Goli</span></div>
+  <div class="subtitle">Bot Control Panel</div>
+
+  <div class="status-label">Current Status</div>
+  <div class="status-text" id="statusText">Loading...</div>
+
+  <div class="toggle-wrap">
+    <span class="toggle-label">Bot Active</span>
+    <label class="toggle">
+      <input type="checkbox" id="toggle"/>
+      <span class="slider"></span>
+    </label>
+    <span class="toggle-label">I'm Online</span>
+  </div>
+
+  <div class="info" id="infoBox">Checking status...</div>
+</div>
+
+<script>
+  const KEY = '${key}';
+  const toggle = document.getElementById('toggle');
+  const statusText = document.getElementById('statusText');
+  const infoBox = document.getElementById('infoBox');
+
+  function updateUI(mode) {
+    const online = mode === 'online';
+    toggle.checked = online;
+    statusText.className = 'status-text ' + mode;
+    statusText.innerHTML = online
+      ? '<span class="dot online"></span>You are Online'
+      : '<span class="dot offline"></span>Bot is Active';
+    infoBox.innerHTML = online
+      ? '<strong>You are handling messages.</strong><br>Bot is silent — customers will hear from you directly.'
+      : '<strong>Bot is auto-replying.</strong><br>Toggle when you come online to reply manually.';
+  }
+
+  async function fetchStatus() {
+    const r = await fetch('/status?key=' + KEY);
+    const d = await r.json();
+    updateUI(d.mode);
+  }
+
+  toggle.addEventListener('change', async () => {
+    const endpoint = toggle.checked ? '/online' : '/offline';
+    statusText.textContent = 'Updating...';
+    const r = await fetch(endpoint + '?key=' + KEY);
+    const d = await r.json();
+    updateUI(d.mode);
+  });
+
+  fetchStatus();
+</script>
+</body>
+</html>`);
 });
 
 // ── System prompt ─────────────────────────────────────────────────────────────
