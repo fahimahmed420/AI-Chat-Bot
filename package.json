@@ -1,0 +1,20 @@
+{
+  "name": "ai-chat-bot",
+  "version": "1.0.0",
+  "description": "Facebook/WhatsApp chatbot powered by Google Gemini, replies in Bangla",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "axios": "^1.7.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0",
+    "groq-sdk": "^1.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
