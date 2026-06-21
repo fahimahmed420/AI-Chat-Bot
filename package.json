@@ -1,11 +1,14 @@
 {
   "name": "ai-chat-bot",
   "version": "1.0.0",
-  "description": "Facebook/WhatsApp chatbot powered by Google Gemini, replies in Bangla",
+  "description": "Facebook/WhatsApp chatbot powered by Groq, replies in Bangla/English",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "@google/genai": "^1.0.0",

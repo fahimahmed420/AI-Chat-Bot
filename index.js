@@ -3,6 +3,14 @@ const express = require('express');
 const axios = require('axios');
 const Groq = require('groq-sdk');
 
+// ── Startup validation ────────────────────────────────────────────────────────
+const REQUIRED_ENV = ['GROQ_API_KEY', 'FACEBOOK_PAGE_ACCESS_TOKEN', 'VERIFY_TOKEN'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+  console.error('Missing required environment variables:', missing.join(', '));
+  process.exit(1);
+}
+
 const app = express();
 app.use(express.json());
 
@@ -32,6 +40,8 @@ app.get('/status', (req, res) => {
   if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
   res.json({ mode: isOnline ? 'online' : 'offline' });
 });
+
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 app.get('/dashboard', (req, res) => {
   if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
