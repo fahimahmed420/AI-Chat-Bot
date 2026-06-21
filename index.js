@@ -9,6 +9,32 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+// ── Online/Offline toggle ─────────────────────────────────────────────────────
+// When ONLINE: bot stays silent, you reply manually.
+// When OFFLINE: bot auto-replies to every message.
+let isOnline = false;
+
+app.get('/online', (req, res) => {
+  if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
+  isOnline = true;
+  console.log('[mode] ONLINE — bot is silent');
+  res.send('✅ You are now ONLINE. Bot is silent — you reply manually.');
+});
+
+app.get('/offline', (req, res) => {
+  if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
+  isOnline = false;
+  console.log('[mode] OFFLINE — bot is active');
+  res.send('🤖 You are now OFFLINE. Bot will auto-reply to customers.');
+});
+
+app.get('/status', (req, res) => {
+  if (req.query.key !== process.env.VERIFY_TOKEN) return res.sendStatus(403);
+  res.send(`Current mode: ${isOnline ? '🟢 ONLINE (bot silent)' : '🔴 OFFLINE (bot active)'}`);
+});
+
+// ── System prompt ─────────────────────────────────────────────────────────────
+
 const SYSTEM_INSTRUCTION = `তুমি "Aura Goli"-র অফিসিয়াল কাস্টমার সার্ভিস অ্যাসিস্ট্যান্ট। তোমার নাম "Aura Bot"।
 Aura Goli একটি বাংলাদেশি প্রিমিয়াম অনলাইন টি-শার্ট ব্র্যান্ড, যা ঢাকা থেকে পরিচালিত হয়।
 
@@ -51,7 +77,7 @@ Made in Bangladesh, ethically sourced।
 - Aura Goli-র বাইরের কোনো বিষয়ে প্রশ্ন করলে বিনয়ের সাথে জানাবে যে তুমি শুধু Aura Goli-র বিষয়ে সাহায্য করতে পারবে।
 - উত্তর সংক্ষিপ্ত, স্পষ্ট ও সহায়ক রাখবে।`;
 
-// ── Gemini ────────────────────────────────────────────────────────────────────
+// ── Groq ──────────────────────────────────────────────────────────────────────
 
 async function generateReply(userMessage) {
   const response = await groq.chat.completions.create({
@@ -111,8 +137,12 @@ app.get('/webhook', (req, res) => {
 // ── Webhook: POST (incoming messages) ────────────────────────────────────────
 
 app.post('/webhook', async (req, res) => {
-  // Always acknowledge Meta immediately (within 20 s window)
   res.sendStatus(200);
+
+  if (isOnline) {
+    console.log('[mode] ONLINE — skipping auto-reply');
+    return;
+  }
 
   const body = req.body;
 
@@ -173,4 +203,7 @@ async function handleWhatsAppEntries(entries = []) {
 
 // ── Start ─────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+  console.log(`Mode: ${isOnline ? 'ONLINE (bot silent)' : 'OFFLINE (bot active)'}`);
+});
