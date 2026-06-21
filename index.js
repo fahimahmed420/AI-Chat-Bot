@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
+const cors = require('cors');
 const Groq = require('groq-sdk');
 
 // ── Startup validation ────────────────────────────────────────────────────────
@@ -12,6 +13,7 @@ if (missing.length) {
 }
 
 const app = express();
+app.use(cors({ origin: 'https://aura-bot-app.vercel.app' }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
